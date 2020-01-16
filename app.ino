@@ -15,6 +15,7 @@
 
 int *buff = 0;
 unsigned int sampling_period_us = round(1000000 * (1.0 / SAMPLING_FREQUENCY));
+int count = 0;
 
 void setup()
 {
@@ -27,9 +28,39 @@ void setup()
 
     pinMode(MIC, INPUT);
 
+    buff = new int[SAMPLES];
+
+    // // 文字サイズを変更
+    // M5.Lcd.setTextSize(2);
+    // // Aボタン　カウンタ表示
+    // M5.Lcd.setCursor(50, 50);
+    // M5.Lcd.printf("Button A : %d", count);
+
     delay(1000);
 }
 
 void loop()
 {
+    M5.update();
+
+    if (M5.BtnA.isPressed())
+    {
+        buff[count] = analogRead(MIC);
+        count++;
+    }
+    // if (M5.BtnA.wasReleased())
+    // {
+    //     for (int i = 0; i < count; i++)
+    //     {
+    //         Serial.println(buff[i]);
+    //     }
+
+    //     M5.Lcd.setCursor(50, 50);
+    //     M5.Lcd.printf("Button A : %d", count);
+
+    //     delete[] buff;
+    //     buff = new int[SAMPLES];
+    //     count = 0;
+    // }
+    usleep(sampling_period_us);
 }
