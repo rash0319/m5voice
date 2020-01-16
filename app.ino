@@ -8,63 +8,28 @@
 #include <stdio.h>
 #include <unistd.h>
 
-unsigned int guiBtnA_Time;
-unsigned int guiBtnB_Time;
-unsigned int guiBtnC_Time;
-int hz = 1;
+#define MIC 36
+#define SAMPLING_FREQUENCY 40000
+#define MAXTIME 3600
+#define SAMPLES 144000000
+
+int *buff = 0;
+unsigned int sampling_period_us = round(1000000 * (1.0 / SAMPLING_FREQUENCY));
 
 void setup()
 {
-    // M5Stackの初期化
     M5.begin();
+    M5.Speaker.write(0); // スピーカーをオフする
+    Serial.begin(115200);
+    while (!Serial)
+        ;
+    M5.lcd.setBrightness(20); // LCDバックライトの輝度を下げる
 
-    // 初期化
-    guiBtnA_Time = 0;
-    guiBtnB_Time = 0;
-    guiBtnC_Time = 0;
-    // 文字サイズを変更
-    M5.Lcd.setTextSize(2);
-    // Aボタン　カウンタ表示
-    M5.Lcd.setCursor(50, 50);
-    M5.Lcd.printf("Button A : %d", guiBtnA_Time);
-    // Bボタン　カウンタ表示
-    M5.Lcd.setCursor(50, 100);
-    M5.Lcd.printf("Button B : %d", guiBtnB_Time);
-    // Cボタン　カウンタ表示
-    M5.Lcd.setCursor(50, 150);
-    M5.Lcd.printf("Button C : %d", guiBtnC_Time);
+    pinMode(MIC, INPUT);
+
+    delay(1000);
 }
 
 void loop()
 {
-
-    M5.update();
-    // Aボタン
-    // if (M5.BtnA.wasPressed())
-    if (M5.BtnA.isPressed())
-    {
-        guiBtnA_Time++;
-        // カウンタ表示
-        M5.Lcd.setCursor(50, 50);
-        M5.Lcd.printf("Button A : %d", guiBtnA_Time);
-    }
-    // Bボタン
-    if (M5.BtnB.isPressed())
-    {
-        // カウンタ更新
-        guiBtnB_Time++;
-        // カウンタ表示
-        M5.Lcd.setCursor(50, 100);
-        M5.Lcd.printf("Button B : %d", guiBtnB_Time);
-    }
-    // Cボタン
-    if (M5.BtnC.isPressed())
-    {
-        // カウンタ更新
-        guiBtnC_Time++;
-        // カウンタ表示
-        M5.Lcd.setCursor(50, 150);
-        M5.Lcd.printf("Button C : %d", guiBtnC_Time);
-    }
-    usleep(1000000 / hz);
 }
