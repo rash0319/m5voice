@@ -8,31 +8,45 @@
 #include <stdio.h>
 #include <unistd.h>
 
-unsigned int guiBtnA_Time;
-unsigned int guiBtnB_Time;
-unsigned int guiBtnC_Time;
-int hz = 1;
+#define MIC 36
+
+// 人の声は約500~1000Hz
+// ↑のナイキスト周波数は1000~2000Hz
+// 余裕を持って3000に
+#define SAMPLING_FREQUENCY 3000
+
+// ArduinoのRAMだとこの辺が限界
+#define SAMPLES 45000
+
+// 録音可能時間 SAMPLES/SAMPLING_FREQUENCY
+#define MAXTIME 15
+
+// 0~4095が入ればいいのでshort型にする
+short buff[SAMPLES];
+
+unsigned int sampling_period_us = round(1000000 * (1.0 / SAMPLING_FREQUENCY));
+
+int count = 0;
 
 void setup()
 {
     // M5Stackの初期化
     M5.begin();
+    M5.Speaker.write(0); // スピーカーをオフする
+    Serial.begin(115200);
+    while (!Serial)
+        ;
+    M5.lcd.setBrightness(20); // LCDバックライトの輝度を下げる
 
-    // 初期化
-    guiBtnA_Time = 0;
-    guiBtnB_Time = 0;
-    guiBtnC_Time = 0;
     // 文字サイズを変更
     M5.Lcd.setTextSize(2);
     // Aボタン　カウンタ表示
     M5.Lcd.setCursor(50, 50);
-    M5.Lcd.printf("Button A : %d", guiBtnA_Time);
-    // Bボタン　カウンタ表示
-    M5.Lcd.setCursor(50, 100);
-    M5.Lcd.printf("Button B : %d", guiBtnB_Time);
-    // Cボタン　カウンタ表示
-    M5.Lcd.setCursor(50, 150);
-    M5.Lcd.printf("Button C : %d", guiBtnC_Time);
+    M5.Lcd.printf("Status : StandBy");
+
+    pinMode(MIC, INPUT);
+
+    delay(1000);
 }
 
 void loop()
@@ -40,31 +54,34 @@ void loop()
 
     M5.update();
     // Aボタン
-    // if (M5.BtnA.wasPressed())
+    unsigned long t = micros();
     if (M5.BtnA.isPressed())
     {
-        guiBtnA_Time++;
-        // カウンタ表示
+        buff[count] = analogRead(MIC);
         M5.Lcd.setCursor(50, 50);
-        M5.Lcd.printf("Button A : %d", guiBtnA_Time);
-    }
-    // Bボタン
-    if (M5.BtnB.isPressed())
-    {
-        // カウンタ更新
-        guiBtnB_Time++;
-        // カウンタ表示
+        M5.Lcd.printf("Status : Sampling...");
         M5.Lcd.setCursor(50, 100);
-        M5.Lcd.printf("Button B : %d", guiBtnB_Time);
+        M5.Lcd.printf("Time remaining: %d second", int(MAXTIME - (count / SAMPLING_FREQUENCY)));
+        count++;
     }
-    // Cボタン
-    if (M5.BtnC.isPressed())
+
+    if (M5.BtnA.wasReleased())
     {
-        // カウンタ更新
-        guiBtnC_Time++;
-        // カウンタ表示
-        M5.Lcd.setCursor(50, 150);
-        M5.Lcd.printf("Button C : %d", guiBtnC_Time);
+        for (int i = 0; i < count; i++)
+        {
+            Serial.println(buff[i]);
+        }
+        for (int i = 0; i < SAMPLES; i++)
+        {
+            buff[i] = 0;
+        }
+
+        M5.Lcd.setCursor(50, 50);
+        M5.Lcd.printf("Status : Success!!");
+
+        count = 0;
     }
-    usleep(1000000 / hz);
+
+    while ((micros() - t) < sampling_period_us)
+        ;
 }
